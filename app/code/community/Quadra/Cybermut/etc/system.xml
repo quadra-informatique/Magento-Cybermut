@@ -134,20 +134,56 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </order_status>
-                        <order_status_payment_accepted translate="label">
-                            <label>Order status when payment accepted by Cybermut</label>
+                        <order_status_payment_accepted_no_3ds translate="label">
+                            <label>Order status when payment accepted by Cybermut but the transaction was not done according to the 3DSecure protocol</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>cybermut/system_config_source_order_status_accepted</source_model>
-                            <sort_order>121</sort_order>
+                            <source_model>cybermut/system_config_source_order_status_accepted_3dsrisky</source_model>
+                            <sort_order>122</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                        </order_status_payment_accepted>
+                        </order_status_payment_accepted_no_3ds>
+                        <order_status_payment_accepted_3ds_low_risk translate="label">
+                            <label>Order status when payment accepted by Cybermut, the transaction was done according 3DS protocol and the level of risk is low</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>cybermut/system_config_source_order_status_accepted</source_model>
+                            <sort_order>123</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </order_status_payment_accepted_3ds_low_risk>
+                        <order_status_payment_accepted_no_3ds_but_user_authentified translate="label">
+                            <label>Order status when payment accepted by Cybermut, the transaction can not be done according to the 3DSecure protocol, the carrier has however been authenticated through 3DSecure</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>cybermut/system_config_source_order_status_accepted_3dsrisky</source_model>
+                            <sort_order>124</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </order_status_payment_accepted_no_3ds_but_user_authentified>
+                        <order_status_payment_accepted_3ds_high_risk translate="label">
+                            <label>Order status when payment accepted by Cybermut, the transaction was done according 3DS protocol and the level of risk is high</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>cybermut/system_config_source_order_status_accepted_3dsrisky</source_model>
+                            <sort_order>125</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </order_status_payment_accepted_3ds_high_risk>
+                        <order_status_payment_accepted_3ds_very_high_risk translate="label">
+                            <label>Order status when payment accepted by Cybermut, the transaction was done according 3DS protocol and the level of risk is very high</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>cybermut/system_config_source_order_status_accepted_3dsrisky</source_model>
+                            <sort_order>126</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </order_status_payment_accepted_3ds_very_high_risk>
                         <order_status_payment_refused translate="label">
                             <label>Order status when payment refused by Cybermut</label>
                             <frontend_type>select</frontend_type>
                             <source_model>cybermut/system_config_source_order_status_refused</source_model>
-                            <sort_order>122</sort_order>
+                            <sort_order>127</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
@@ -156,7 +192,7 @@
                             <label>Order status when payment canceled by customer</label>
                             <frontend_type>select</frontend_type>
                             <source_model>cybermut/system_config_source_order_status_canceled</source_model>
-                            <sort_order>123</sort_order>
+                            <sort_order>128</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>

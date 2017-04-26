@@ -158,6 +158,31 @@ abstract class Quadra_Cybermut_Controller_Action extends Mage_Core_Controller_Fr
         $returnedMAC = $postData['MAC'];
         $correctMAC = $model->getResponseMAC($postData);
 
+        $returned3DSStatus = (int) $postData['status3ds'];
+        switch ($returned3DSStatus) {
+            // la transaction ne s'est pas faite selon le protocole 3DSecure
+            case -1:
+            default:
+                $orderStatusPaymentAccepted = 'order_status_payment_accepted_no_3ds';
+                break;
+            // la transaction s'est faite selon le protocole 3DS et le niveau de risque est faible
+            case 1:
+                $orderStatusPaymentAccepted = 'order_status_payment_accepted_3ds_low_risk';
+                break;
+            // la transaction ne peut se faire selon le protocole 3DSecure, le porteur a cependant été authentifié par le biais de 3DSecure
+            case 2:
+                $orderStatusPaymentAccepted = 'order_status_payment_accepted_no_3ds_but_user_authentified';
+                break;
+            // la transaction s'est faite selon le protocole 3DS et le niveau de risque est élevé
+            case 3:
+                $orderStatusPaymentAccepted = 'order_status_payment_accepted_3ds_high_risk';
+                break;
+            // la transaction s'est faite selon le protocole 3DS et le niveau de risque est très élevé
+            case 4:
+                $orderStatusPaymentAccepted = 'order_status_payment_accepted_3ds_very_high_risk';
+                break;
+        }
+
         foreach ($this->getRealOrderIds() as $realOrderId) {
             $order = Mage::getModel('sales/order')->loadByIncrementId($realOrderId);
 
@@ -176,7 +201,10 @@ abstract class Quadra_Cybermut_Controller_Action extends Mage_Core_Controller_Fr
                         $order->unhold();
                     }
 
-                    if (!$status = $model->getConfigData('order_status_payment_accepted')) {
+                    if (!$status = $model->getConfigData($orderStatusPaymentAccepted)) {
+                        $status = $model->getConfigData('order_status_payment_accepted');
+                    }
+                    if (!$status) {
                         $status = $order->getStatus();
                     }
 
