@@ -211,7 +211,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
 
         $fields = array(
             'version' => $this->getVersion(),
-            'TPE' => $this->getConfigData('tpe_no'),
+            'TPE' => trim( $this->getConfigData('tpe_no') ),
             'date' => date('d/m/Y:H:i:s'),
             'montant' => $this->getAmount() . $order->getBaseCurrencyCode(),
             'reference' => $this->getOrderList(),
@@ -248,7 +248,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         $description = $this->getConfigData('description') ? $this->getConfigData('description') : Mage::helper('cybermut')->__('Order %s', $order->getRealOrderId());
 
         $get['retourPLUS'] = "--no-option";
-        $get['TPE'] = $this->getConfigData('tpe_no');
+        $get['TPE'] = trim( $this->getConfigData('tpe_no') );
         $get['date'] = date('d/m/Y:H:i:s');
         $get['montant'] = sprintf('%.2f', $order->getBaseGrandTotal()) . $order->getBaseCurrencyCode();
         $get['reference'] = $order->getRealOrderId();
@@ -256,7 +256,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         $get['code-retour'] = $code_retour;
 
         return "?MAC=" . $this->getResponseMAC($get)
-                . "&TPE=" . $this->getConfigData('tpe_no')
+                . "&TPE=" . trim( $this->getConfigData('tpe_no') )
                 . "&date=" . date('d/m/Y:H:i:s')
                 . "&montant=" . sprintf('%.2f', $order->getBaseGrandTotal()) . $order->getBaseCurrencyCode()
                 . "&reference=" . $order->getRealOrderId()
@@ -375,8 +375,8 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
 		// < V3
 	    	// Load from file if key is empty
 		if (empty( $key )) {
-        $key = $this->getConfigData('key_encrypted');
-        $key = Mage::helper('core')->decrypt($key);
+	        $key = $this->getConfigData('key_encrypted');
+	        $key = Mage::helper('core')->decrypt( $key );
 		}
 
         $hexStrKey = substr($key, 0, 38);
