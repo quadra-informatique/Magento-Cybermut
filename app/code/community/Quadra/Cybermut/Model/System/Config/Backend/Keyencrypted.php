@@ -23,8 +23,26 @@ class Quadra_Cybermut_Model_System_Config_Backend_Keyencrypted extends Mage_Core
      */
     protected function _beforeSave()
     {
+    		switch ( $this->getPath() ) {
+    			
+    			case 'payment/cybermut_payment/key_encrypted' :
+    				if (isset( $_POST['groups']['cybermut_payment']['fields']['key_encrypted']['value']['delete'] )
+	    				&& $_POST['groups']['cybermut_payment']['fields']['key_encrypted']['value']['delete'] )
+    					$this->setValue('');
+    				break;
+    				
+    			case 'payment/cybermut_several/key_encrypted' :
+    				if (isset ( $_POST['groups']['cybermut_several']['fields']['key_encrypted']['value']['delete'] )
+    					&& $_POST['groups']['cybermut_several']['fields']['key_encrypted']['value']['delete'] )
+    					$this->setValue('');
+    				break;
+    		}		
+    
         if ($path = $_FILES['groups']['tmp_name']['cybermut_payment']['fields']['key_encrypted']['value']) {
-
+        	
+        		if (is_array( $path ) )
+        			$path = $path['value'];
+        		
             $filecontent = file_get_contents($path);
             @unlink($path);
 
