@@ -70,6 +70,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </site_code>
+                        <security_key translate="label">
+                            <label>Security key</label>
+                            <comment>Security key is priority on file key. Please keep it empty to use file key so.</comment>
+                            <frontend_type>obscure</frontend_type>
+                            <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                            <sort_order>55</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </security_key>
                         <key_encrypted translate="label">
                             <label>Key</label>
                             <frontend_type>file</frontend_type>
@@ -258,6 +268,16 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </site_code>
+                        <security_key translate="label">
+                            <label>Security key</label>
+                            <comment>Security key is priority on file key. Please keep it empty to use file key so.</comment>
+                            <frontend_type>obscure</frontend_type>
+                            <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                            <sort_order>55</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </security_key>
                         <key_encrypted translate="label">
                             <label>Key</label>
                             <frontend_type>file</frontend_type>

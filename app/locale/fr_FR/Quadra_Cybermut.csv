@@ -53,3 +53,5 @@
 "Only if several times payment is enabled","Seulement si les paiement en plusieurs fois est activé"
 "Order number will be used if left empty","Le numéro de commande sera utilisé par défaut"
 "Preference will be given to store language chosen by the user","La préférence sera donnée à la langue du magasin choisi par l'utilisateur"
+"Security key","Clé de sécurité"
+"Security key is priority on file key. Please keep it empty to use file key so.","La clé de sécurité est prioritaire sur la clé fichier. Veuillez donc conserver ce champ vide pour utiliser la clé fichier"

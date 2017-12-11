@@ -339,6 +339,18 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     }
 
     /**
+     *  Return decrypted merchant security key
+     *
+     *  @param    none
+     *  @return	  string Decrypted merchant security key
+     */
+    protected function _getSecurityKey()
+    {
+    		$key = trim( $this->getConfigData('security_key') );
+    		return Mage::helper('core')->decrypt( $key );
+    }
+    
+    /**
      *  Return merchant key
      *
      *  @param    none
@@ -355,21 +367,17 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      *  @param    none
      *  @return	  string encrypted key
      */
-    /* protected function _getKeyEncrypted()
-      {
-      $key = $this->getConfigData('key_encrypted');
-      $key = Mage::helper('core')->decrypt($key);
-
-      $avant_dernier_tranforme = (ord(substr($key, strlen($key) - 2, 1)) - 23);
-      $key = substr($key, 0, strlen($key) - 2) . chr($avant_dernier_tranforme) . substr($key, strlen($key) - 1, 1);
-
-      return pack("H*", $key);
-      } */
-
     protected function _getKeyEncrypted()
     {
+    		// V3
+		$key = $this->_getSecurityKey();
+	    	
+		// < V3
+	    	// Load from file if key is empty
+		if (empty( $key )) {
         $key = $this->getConfigData('key_encrypted');
         $key = Mage::helper('core')->decrypt($key);
+		}
 
         $hexStrKey = substr($key, 0, 38);
         $hexFinal = "" . substr($key, 38, 2) . "00";
