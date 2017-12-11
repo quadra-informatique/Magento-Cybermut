@@ -335,7 +335,8 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      */
     protected function _getSHAKey()
     {
-        return $this->getConfigData('sha_key');
+    return $this->_getSecurityKey();    
+    	return $this->getConfigData('sha_key');
     }
 
     /**
@@ -360,6 +361,25 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     {
         return $this->getConfigData('key');
     }
+    
+    /**
+     *  Return key, from config's security_key if filled, otherwise key_encrypted file
+     *
+     *  @param    none
+     *  @return	  string Plain Undecrypted Merchant key
+     */
+    protected function _getPlainUndecryptedKey()
+    {
+	    	$key = $this->_getSecurityKey();
+	    	
+	    	// Load from file if key is empty
+	    	if (empty( $key )) {
+	    		$key = $this->getConfigData('key_encrypted');
+	    		$key = Mage::helper('core')->decrypt( $key );
+	    	}
+	    	
+	    	return $key;
+    }
 
     /**
      *  Return encrypted key
@@ -369,15 +389,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      */
     protected function _getKeyEncrypted()
     {
-    		// V3
-		$key = $this->_getSecurityKey();
-	    	
-		// < V3
-	    	// Load from file if key is empty
-		if (empty( $key )) {
-	        $key = $this->getConfigData('key_encrypted');
-	        $key = Mage::helper('core')->decrypt( $key );
-		}
+    		$key = $this->_getPlainUndecryptedKey();
 
         $hexStrKey = substr($key, 0, 38);
         $hexFinal = "" . substr($key, 38, 2) . "00";
@@ -405,11 +417,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      */
     protected function _CMCIC_hmac($string)
     {
-        if ($this->getConfigData('key_encrypted')) {
-            return $this->_CMCIC_hmac_KeyEncrypted($string);
-        } else {
-            return $this->_CMCIC_hmac_KeyPassphrase($string);
-        }
+    		return ($this->_getPlainUndecryptedKey()) ? $this->_CMCIC_hmac_KeyEncrypted($string) : $this->_CMCIC_hmac_KeyPassphrase($string);
     }
 
     /**
