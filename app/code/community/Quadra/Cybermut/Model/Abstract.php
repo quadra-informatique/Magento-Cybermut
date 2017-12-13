@@ -50,6 +50,99 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     }
 
     /**
+     *  Return Test Mode IP List
+     *
+     *  @param    none
+     *  @return	  array List of IP
+     */
+    protected function getTestModeIPList()
+    {
+    		$ipList = $this->getConfigData('test_mode_ip_list');
+    		$ipList = explode(PHP_EOL, $ipList);
+    		foreach( $ipList as $key => $value ) {
+    			if (empty( $value ))
+    				unset( $ipList[ $key ] );
+    			$ipList[ $key ] = trim ( $value );
+    		}
+    		return (is_array( $ipList ) && count( $ipList )) ? $ipList : false;
+    }
+    
+    /**
+     *  Test is test mode ip list is empty
+     *
+     *  @param    none
+     *  @return	  boolean true = list is empty
+     */
+    protected function isTestModeIPListEmpty()
+    {
+    		return ($this->getTestModeIPList() === false);
+    }
+    
+    /**
+     *  Get Client IP
+     *
+     *  @param    none
+     *  @return	  string IP
+     */
+    protected function getClientIP()
+    {
+	    	$ip = false;
+	   
+	    	if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+	    		$ip = $_SERVER['HTTP_CLIENT_IP'];
+	    	} elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+	    		$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	    	} else {
+	    		$ip = $_SERVER['REMOTE_ADDR'];
+	    	}
+	    	
+	    	return $ip;
+    }
+    
+    /**
+     *  Detect if client IP belongs to test list
+     *
+     *  @param    none
+     *  @return	  boolean true if IP belongs to
+     */
+    protected function doesIPBelongToTestModeIPList()
+    {
+	    $testModeIPList = $this->getTestModeIPList();
+	    $ip = $this->getClientIP();
+	    return (in_array( $ip, $testModeIPList ));
+    }
+    
+    /**
+     *  Return test mode status
+     *
+     *  @param    none
+     *  @return	  boolean true = test mode
+     */
+    private function isTestModeActivated()
+    {
+    		$test_mode = $this->getConfigData('test_mode');
+    		if (!$test_mode)
+    			return false;
+    		
+   		return $this->isTestModeIPListEmpty() ? true : $this->doesIPBelongToTestModeIPList();
+    }
+
+    /**
+     *  Return debug mode status
+     *
+     *  @param    none
+     *  @return	  boolean true = debug mode
+     */
+    public function isDebugModeActivated()
+    {
+	    	$debug_mode = $this->getConfigData('debug_flag');
+	    	if (!$debug_mode)
+	    		return false;
+	    		
+    		return $this->isTestModeIPListEmpty() ? true : $this->doesIPBelongToTestModeIPList();
+    }
+    
+    /**
      *  Returns Target URL
      *
      *  @return	  string Target URL
@@ -60,16 +153,16 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         switch ($this->getConfigData('bank')) {
             default:
             case 'mutuel':
-                $url = $this->getConfigData('test_mode') ? 'https://paiement.creditmutuel.fr/test/paiement.cgi' : 'https://paiement.creditmutuel.fr/paiement.cgi';
+                $url = $this->isTestModeActivated() ? 'https://paiement.creditmutuel.fr/test/paiement.cgi' : 'https://paiement.creditmutuel.fr/paiement.cgi';
                 break;
             case 'cic':
-                $url = $this->getConfigData('test_mode') ? 'https://ssl.paiement.cic-banques.fr/test/paiement.cgi' : 'https://ssl.paiement.cic-banques.fr/paiement.cgi';
+            		$url = $this->isTestModeActivated() ? 'https://ssl.paiement.cic-banques.fr/test/paiement.cgi' : 'https://ssl.paiement.cic-banques.fr/paiement.cgi';
                 break;
             case 'obc':
-                $url = $this->getConfigData('test_mode') ? 'https://ssl.paiement.banque-obc.fr/test/paiement.cgi' : 'https://ssl.paiement.banque-obc.fr/paiement.cgi';
+            		$url = $this->isTestModeActivated() ? 'https://ssl.paiement.banque-obc.fr/test/paiement.cgi' : 'https://ssl.paiement.banque-obc.fr/paiement.cgi';
                 break;
             case 'monetico':
-                $url = $this->getConfigData('test_mode') ? 'https://p.monetico-services.com/test/paiement.cgi' : 'https://p.monetico-services.com/paiement.cgi';
+            		$url = $this->isTestModeActivated() ? 'https://p.monetico-services.com/test/paiement.cgi' : 'https://p.monetico-services.com/paiement.cgi';
                 break;
         }
         return $url;
