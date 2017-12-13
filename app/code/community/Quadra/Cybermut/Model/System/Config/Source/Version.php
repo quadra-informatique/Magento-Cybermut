@@ -33,6 +33,10 @@ class Quadra_Cybermut_Model_System_Config_Source_Version
             'value' => '3.0',
             'label' => '3.0'
         );
+        $options[] = array(
+        		'value' => '4.0',
+        		'label' => Mage::helper('adminhtml')->__('4.0 (Not released under production yet)')
+        );
 
         return $options;
     }

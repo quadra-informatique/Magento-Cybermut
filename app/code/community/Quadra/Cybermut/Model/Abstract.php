@@ -48,7 +48,100 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
 
         return $version;
     }
+    
+    /**
+     *  Return Test Mode IP List
+     *
+     *  @param    none
+     *  @return	  array List of IP
+     */
+    protected function getTestModeIPList()
+    {
+    		$ipList = $this->getConfigData('test_mode_ip_list');
+    		$ipList = explode(PHP_EOL, $ipList);
+    		foreach( $ipList as $key => $value ) {
+    			if (empty( $value ))
+    				unset( $ipList[ $key ] );
+    			$ipList[ $key ] = trim ( $value );
+    		}
+    		return (is_array( $ipList ) && count( $ipList )) ? $ipList : false;
+    }
+    
+    /**
+     *  Test is test mode ip list is empty
+     *
+     *  @param    none
+     *  @return	  boolean true = list is empty
+     */
+    protected function isTestModeIPListEmpty()
+    {
+    		return ($this->getTestModeIPList() === false);
+    }
+    
+    /**
+     *  Get Client IP
+     *
+     *  @param    none
+     *  @return	  string IP
+     */
+    protected function getClientIP()
+    {
+	    	$ip = false;
+	   
+	    	if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+	    		$ip = $_SERVER['HTTP_CLIENT_IP'];
+	    	} elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+	    		$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	    	} else {
+	    		$ip = $_SERVER['REMOTE_ADDR'];
+	    	}
+	    	
+	    	return $ip;
+    }
+    
+    /**
+     *  Detect if client IP belongs to test list
+     *
+     *  @param    none
+     *  @return	  boolean true if IP belongs to
+     */
+    protected function doesIPBelongToTestModeIPList()
+    {
+	    $testModeIPList = $this->getTestModeIPList();
+	    $ip = $this->getClientIP();
+	    return (in_array( $ip, $testModeIPList ));
+    }
+    
+    /**
+     *  Return test mode status
+     *
+     *  @param    none
+     *  @return	  boolean true = test mode
+     */
+    private function isTestModeActivated()
+    {
+    		$test_mode = $this->getConfigData('test_mode');
+    		if (!$test_mode)
+    			return false;
+    		
+   		return $this->isTestModeIPListEmpty() ? true : $this->doesIPBelongToTestModeIPList();
+    }
 
+    /**
+     *  Return debug mode status
+     *
+     *  @param    none
+     *  @return	  boolean true = debug mode
+     */
+    public function isDebugModeActivated()
+    {
+	    	$debug_mode = $this->getConfigData('debug_flag');
+	    	if (!$debug_mode)
+	    		return false;
+	    		
+    		return $this->isTestModeIPListEmpty() ? true : $this->doesIPBelongToTestModeIPList();
+    }
+    
     /**
      *  Returns Target URL
      *
@@ -60,16 +153,16 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         switch ($this->getConfigData('bank')) {
             default:
             case 'mutuel':
-                $url = $this->getConfigData('test_mode') ? 'https://paiement.creditmutuel.fr/test/paiement.cgi' : 'https://paiement.creditmutuel.fr/paiement.cgi';
+                $url = $this->isTestModeActivated() ? 'https://paiement.creditmutuel.fr/test/paiement.cgi' : 'https://paiement.creditmutuel.fr/paiement.cgi';
                 break;
             case 'cic':
-                $url = $this->getConfigData('test_mode') ? 'https://ssl.paiement.cic-banques.fr/test/paiement.cgi' : 'https://ssl.paiement.cic-banques.fr/paiement.cgi';
+            		$url = $this->isTestModeActivated() ? 'https://ssl.paiement.cic-banques.fr/test/paiement.cgi' : 'https://ssl.paiement.cic-banques.fr/paiement.cgi';
                 break;
             case 'obc':
-                $url = $this->getConfigData('test_mode') ? 'https://ssl.paiement.banque-obc.fr/test/paiement.cgi' : 'https://ssl.paiement.banque-obc.fr/paiement.cgi';
+            		$url = $this->isTestModeActivated() ? 'https://ssl.paiement.banque-obc.fr/test/paiement.cgi' : 'https://ssl.paiement.banque-obc.fr/paiement.cgi';
                 break;
             case 'monetico':
-                $url = $this->getConfigData('test_mode') ? 'https://p.monetico-services.com/test/paiement.cgi' : 'https://p.monetico-services.com/paiement.cgi';
+            		$url = $this->isTestModeActivated() ? 'https://p.monetico-services.com/test/paiement.cgi' : 'https://p.monetico-services.com/paiement.cgi';
                 break;
         }
         return $url;
@@ -211,7 +304,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
 
         $fields = array(
             'version' => $this->getVersion(),
-            'TPE' => $this->getConfigData('tpe_no'),
+            'TPE' => trim( $this->getConfigData('tpe_no') ),
             'date' => date('d/m/Y:H:i:s'),
             'montant' => $this->getAmount() . $order->getBaseCurrencyCode(),
             'reference' => $this->getOrderList(),
@@ -248,7 +341,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         $description = $this->getConfigData('description') ? $this->getConfigData('description') : Mage::helper('cybermut')->__('Order %s', $order->getRealOrderId());
 
         $get['retourPLUS'] = "--no-option";
-        $get['TPE'] = $this->getConfigData('tpe_no');
+        $get['TPE'] = trim( $this->getConfigData('tpe_no') );
         $get['date'] = date('d/m/Y:H:i:s');
         $get['montant'] = sprintf('%.2f', $order->getBaseGrandTotal()) . $order->getBaseCurrencyCode();
         $get['reference'] = $order->getRealOrderId();
@@ -256,7 +349,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         $get['code-retour'] = $code_retour;
 
         return "?MAC=" . $this->getResponseMAC($get)
-                . "&TPE=" . $this->getConfigData('tpe_no')
+                . "&TPE=" . trim( $this->getConfigData('tpe_no') )
                 . "&date=" . date('d/m/Y:H:i:s')
                 . "&montant=" . sprintf('%.2f', $order->getBaseGrandTotal()) . $order->getBaseCurrencyCode()
                 . "&reference=" . $order->getRealOrderId()
@@ -319,7 +412,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
                 $data['pares'] = "";
             }
 
-            $string = sprintf('%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*', $data['TPE'], $data['date'], $data['montant'], $data['reference'], $data['texte-libre'], '3.0', $data['code-retour'], $data['cvx'], $data['vld'], $data['brand'], $data['status3ds'], $data['numauto'], $data['motifrefus'], $data['originecb'], $data['bincb'], $data['hpancb'], $data['ipclient'], $data['originetr'], $data['veres'], $data['pares']);
+            $string = sprintf('%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*%s*', $data['TPE'], $data['date'], $data['montant'], $data['reference'], $data['texte-libre'], $this->getVersion(), $data['code-retour'], $data['cvx'], $data['vld'], $data['brand'], $data['status3ds'], $data['numauto'], $data['motifrefus'], $data['originecb'], $data['bincb'], $data['hpancb'], $data['ipclient'], $data['originetr'], $data['veres'], $data['pares']);
         } else {
             $string = sprintf('%s%s+%s+%s+%s+%s+%s+%s+', $data['retourPLUS'], $data['TPE'], $data['date'], $data['montant'], $data['reference'], $data['texte-libre'], $this->getVersion(), $data['code-retour']);
         }
@@ -335,9 +428,22 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      */
     protected function _getSHAKey()
     {
-        return $this->getConfigData('sha_key');
+    return $this->_getSecurityKey();    
+    	return $this->getConfigData('sha_key');
     }
 
+    /**
+     *  Return decrypted merchant security key
+     *
+     *  @param    none
+     *  @return	  string Decrypted merchant security key
+     */
+    protected function _getSecurityKey()
+    {
+    		$key = trim( $this->getConfigData('security_key') );
+    		return Mage::helper('core')->decrypt( $key );
+    }
+    
     /**
      *  Return merchant key
      *
@@ -348,6 +454,25 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     {
         return $this->getConfigData('key');
     }
+    
+    /**
+     *  Return key, from config's security_key if filled, otherwise key_encrypted file
+     *
+     *  @param    none
+     *  @return	  string Plain Undecrypted Merchant key
+     */
+    protected function _getPlainUndecryptedKey()
+    {
+	    	$key = $this->_getSecurityKey();
+	    	
+	    	// Load from file if key is empty
+	    	if (empty( $key )) {
+	    		$key = $this->getConfigData('key_encrypted');
+	    		$key = Mage::helper('core')->decrypt( $key );
+	    	}
+	    	
+	    	return $key;
+    }
 
     /**
      *  Return encrypted key
@@ -355,21 +480,9 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      *  @param    none
      *  @return	  string encrypted key
      */
-    /* protected function _getKeyEncrypted()
-      {
-      $key = $this->getConfigData('key_encrypted');
-      $key = Mage::helper('core')->decrypt($key);
-
-      $avant_dernier_tranforme = (ord(substr($key, strlen($key) - 2, 1)) - 23);
-      $key = substr($key, 0, strlen($key) - 2) . chr($avant_dernier_tranforme) . substr($key, strlen($key) - 1, 1);
-
-      return pack("H*", $key);
-      } */
-
     protected function _getKeyEncrypted()
     {
-        $key = $this->getConfigData('key_encrypted');
-        $key = Mage::helper('core')->decrypt($key);
+    		$key = $this->_getPlainUndecryptedKey();
 
         $hexStrKey = substr($key, 0, 38);
         $hexFinal = "" . substr($key, 38, 2) . "00";
@@ -397,11 +510,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      */
     protected function _CMCIC_hmac($string)
     {
-        if ($this->getConfigData('key_encrypted')) {
-            return $this->_CMCIC_hmac_KeyEncrypted($string);
-        } else {
-            return $this->_CMCIC_hmac_KeyPassphrase($string);
-        }
+    		return ($this->_getPlainUndecryptedKey()) ? $this->_CMCIC_hmac_KeyEncrypted($string) : $this->_CMCIC_hmac_KeyPassphrase($string);
     }
 
     /**

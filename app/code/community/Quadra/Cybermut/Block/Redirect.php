@@ -38,7 +38,7 @@ class Quadra_Cybermut_Block_Redirect extends Mage_Core_Block_Abstract
         $html.= '<script type="text/javascript">document.getElementById("cybermut_payment_checkout").submit();</script>';
         $html.= '</body></html>';
 
-        if ($methodInstance->getConfigData('debug_flag')) {
+        if ($methodInstance->isDebugModeActivated()) {
             Mage::getModel('cybermut/api_debug')
                     ->setRequestBody($formHTML)
                     ->save();

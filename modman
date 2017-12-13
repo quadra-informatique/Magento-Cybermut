@@ -1,0 +1,6 @@
+app/code/community/Quadra/Cybermut						app/code/community/Quadra/Cybermut
+app/design/frontend/base/default/layout/cybermut.xml		app/design/frontend/base/default/layout/cybermut.xml
+app/design/frontend/base/default/template/cybermut		app/design/frontend/base/default/template/cybermut
+app/etc/modules/Quadra_Cybermut.xml						app/etc/modules/Quadra_Cybermut.xml
+app/locale/fr_FR/Quadra_Cybermut.csv						app/locale/fr_FR/Quadra_Cybermut.csv
+skin/frontend/base/default/images/media/cybermut			skin/frontend/base/default/images/media/cybermut
