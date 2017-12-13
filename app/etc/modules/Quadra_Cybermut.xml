@@ -22,7 +22,7 @@
             <codePool>community</codePool>
             <depends>
                 <Mage_Payment />
-                <Quadra_Extensions />
+                <!-- Quadra_Extensions /-->
             </depends>
         </Quadra_Cybermut>
     </modules>
