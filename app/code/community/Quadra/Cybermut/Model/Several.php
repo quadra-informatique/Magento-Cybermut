@@ -107,7 +107,7 @@ class Quadra_Cybermut_Model_Several extends Quadra_Cybermut_Model_Abstract
 
             $fields = array_merge($fields, $terms);
         }
-Mage::log($fields);
+        
         return $fields;
     }
 

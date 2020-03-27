@@ -156,7 +156,7 @@ abstract class Quadra_Cybermut_Controller_Action extends Mage_Core_Controller_Fr
         }
 
         $returnedMAC = $postData['MAC'];
-        $correctMAC = $model->getResponseMAC($postData);
+        $correctMAC = strtolower($model->getResponseMACV2($postData));
 
         foreach ($this->getRealOrderIds() as $realOrderId) {
             $order = Mage::getModel('sales/order')->loadByIncrementId($realOrderId);
