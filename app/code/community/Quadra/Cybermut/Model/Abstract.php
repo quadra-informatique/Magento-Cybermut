@@ -338,6 +338,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      *  Return vars to pur in the URL
      *  Fabrication des données GET au cas où la transmission Cybermut -> serveur Magento n'a pas fonctionnée
      *
+     *  @deprecated
      *  @param	  array
      *  @return	  String
      */
