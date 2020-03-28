@@ -56,23 +56,11 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      */
     public function getCybermutUrl()
     {
-        $url = '';
-        switch ($this->getConfigData('bank')) {
-            default:
-            case 'mutuel':
-                $url = $this->getConfigData('test_mode') ? 'https://paiement.creditmutuel.fr/test/paiement.cgi' : 'https://paiement.creditmutuel.fr/paiement.cgi';
-                break;
-            case 'cic':
-                $url = $this->getConfigData('test_mode') ? 'https://ssl.paiement.cic-banques.fr/test/paiement.cgi' : 'https://ssl.paiement.cic-banques.fr/paiement.cgi';
-                break;
-            case 'obc':
-                $url = $this->getConfigData('test_mode') ? 'https://ssl.paiement.banque-obc.fr/test/paiement.cgi' : 'https://ssl.paiement.banque-obc.fr/paiement.cgi';
-                break;
-            case 'monetico':
-                $url = $this->getConfigData('test_mode') ? 'https://p.monetico-services.com/test/paiement.cgi' : 'https://p.monetico-services.com/paiement.cgi';
-                break;
+        if ($this->getConfigData('test_mode')) {
+            return "https://p.monetico-services.com/test/paiement.cgi";
+        } else {
+            return "https://p.monetico-services.com/paiement.cgi";
         }
-        return $url;
     }
 
     /**
@@ -210,33 +198,147 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         $description = $this->getConfigData('description') ? $this->getConfigData('description') : Mage::helper('cybermut')->__('Order %s', $this->getOrderList());
 
         $fields = array(
-            'version' => $this->getVersion(),
             'TPE' => $this->getConfigData('tpe_no'),
+            'contexte_commande' => base64_encode(utf8_encode(json_encode($this->getContext($order)))),
             'date' => date('d/m/Y:H:i:s'),
-            'montant' => $this->getAmount() . $order->getBaseCurrencyCode(),
-            'reference' => $this->getOrderList(),
-            'texte-libre' => $description,
             'lgue' => $this->_getLanguageCode(),
+            'mail'	=> $order->getCustomerEmail(),
+            'montant' => (string) $this->getAmount() . $order->getBaseCurrencyCode(),
+            'reference' => $this->getOrderList(),
             'societe' => $this->getConfigData('site_code'),
-            'url_retour' => $this->getNotifyURL(),
-            'url_retour_ok' => $this->getSuccessURL(),
+            'texte-libre' => $description,
             'url_retour_err' => $this->getErrorURL(),
-            'bouton' => 'ButtonLabel'
+            'url_retour_ok' => $this->getSuccessURL(),
+            'version' => $this->getVersion(),
         );
 
-        if (((int)$this->getVersion()) >= 3) {
-            $fields['mail'] = $order->getCustomerEmail();
-        }
-
-        $fields['MAC'] = $this->_getMAC($fields);
+        $hashable = $this->getHashable($fields);
+        $mac = $this->computeHmac($hashable);
+        $fields['MAC'] = $mac;
 
         return $fields;
+    }
+
+    /**
+     * Get the hashable string from the array
+     *
+     * @param $fields
+     * @return string
+     */
+    protected function getHashable($fields)
+    {
+        // Formats the values in the following way : Nom_champ=Valeur_champ
+        array_walk($fields, function (&$value, $key) {$value = "$key=$value";});
+
+        // Make it as a single string with * as separation character
+        $hashable = join("*", $fields);
+
+        return $hashable;
+    }
+
+    /**
+     * Generate the context (only the required fields)
+     *
+     * @param Mage_Sales_Model_Order $order
+     * @return array
+     */
+    protected function getContext($order)
+    {
+        $data = array();
+        $data['billing'] = array();
+        // Get the billing address
+        $billingAddress = $order->getBillingAddress();
+        $data['billing']['name'] = substr($billingAddress->getFirstname() . " " . $billingAddress->getLastname(), 0, 45);
+        $data['billing']['firstName'] = substr($billingAddress->getFirstname(), 0, 45);
+        $data['billing']['lastName'] = substr($billingAddress->getLastname(), 0, 45);
+        if (is_array($billingAddress->getStreet())) {
+            $streetFull = implode(" ", $billingAddress->getStreet());
+            $data['billing']['address'] = substr($streetFull, 0, 255);
+        } else {
+            $data['billing']['address'] = substr($billingAddress->getStreet(), 0, 255);
+        }
+
+        $data['billing']['addressLine1'] = substr($billingAddress->getStreet1(), 0, 50);
+        if ($billingAddress->getStreet2()) {
+            $data['billing']['addressLine2'] = substr($billingAddress->getStreet2(), 0, 50);
+        }
+
+        if ($billingAddress->getStreet3()) {
+            $data['billing']['addressLine3'] = substr($billingAddress->getStreet3(), 0, 50);
+        }
+
+        $data['billing']['city'] = substr($billingAddress->getCity(), 0, 50);
+        $data['billing']['postalCode'] = $billingAddress->getPostcode();
+        if ($regionId = $billingAddress->getRegionId()) {
+            $region = Mage::getModel('directory/region')->load($billingAddress->getRegionId());
+            $countryId = $region->getCountryId();
+            $code = $region->getCode();
+            if ($countryId
+                && $region) {
+                $data['billing']['stateOrProvince'] = $countryId . "_" . $code;
+            }
+        }
+
+        $data['billing']['country'] = Mage::getModel('directory/country')->load($billingAddress->getCountryId())->getIso2Code();
+        if ($billingAddress->getPhone()) {
+            $data['billing']['phone'] = (substr($billingAddress->getPhone(),0,1) == "+")
+                ? substr($billingAddress->getPhone(), 0, 18)
+                : "";
+        }
+
+        $data['shipping'] = array();
+        // Get the shipping address
+        if ($order->getShippingAddress()) {
+            $shippingAddress = $order->getShippingAddress();
+            $data['shipping']['name'] = substr($shippingAddress->getFirstname() . " " . $shippingAddress->getLastname(), 0, 45);
+            $data['shipping']['firstName'] = substr($shippingAddress->getFirstname(), 0, 45);
+            $data['shipping']['lastName'] = substr($shippingAddress->getLastname(), 0, 45);
+            if (is_array($shippingAddress->getStreet())) {
+                $streetFull = implode(" ", $shippingAddress->getStreet());
+                $data['shipping']['address'] = substr($streetFull, 0, 255);
+            } else {
+                $data['shipping']['address'] = substr($shippingAddress->getStreet(), 0, 255);
+            }
+
+            $data['shipping']['addressLine1'] = substr($shippingAddress->getStreet1(), 0, 50);
+            if ($shippingAddress->getStreet2()) {
+                $data['shipping']['addressLine2'] = substr($shippingAddress->getStreet2(), 0, 50);
+            }
+
+            if ($shippingAddress->getStreet3()) {
+                $data['shipping']['addressLine3'] = substr($shippingAddress->getStreet3(), 0, 50);
+            }
+
+            $data['shipping']['city'] = substr($shippingAddress->getCity(), 0, 50);
+            $data['shipping']['postalCode'] = $shippingAddress->getPostcode();
+            if ($regionId = $shippingAddress->getRegionId()) {
+                $region = Mage::getModel('directory/region')->load($shippingAddress->getRegionId());
+                $countryId = $region->getCountryId();
+                $code = $region->getCode();
+                if ($countryId
+                    && $region) {
+                    $data['shipping']['stateOrProvince'] = $countryId . "_" . $code;
+                }
+            }
+
+            $data['shipping']['country'] = Mage::getModel('directory/country')->load($shippingAddress->getCountryId())->getIso2Code();
+            if ($shippingAddress->getPhone()) {
+                $data['shipping']['phone'] = (substr($shippingAddress->getPhone(),0,1) == "+")
+                    ? substr($shippingAddress->getPhone(), 0, 18)
+                    : "";
+            }
+        } else {
+            $data['shipping'] = $data['billing'];
+        }
+
+        return $data;
     }
 
     /**
      *  Return vars to pur in the URL
      *  Fabrication des données GET au cas où la transmission Cybermut -> serveur Magento n'a pas fonctionnée
      *
+     *  @deprecated
      *  @param	  array
      *  @return	  String
      */
@@ -255,7 +357,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
         $get['texte-libre'] = $description;
         $get['code-retour'] = $code_retour;
 
-        return "?MAC=" . $this->getResponseMAC($get)
+        return "?MAC=" . $this->getResponseMACV2($get)
                 . "&TPE=" . $this->getConfigData('tpe_no')
                 . "&date=" . date('d/m/Y:H:i:s')
                 . "&montant=" . sprintf('%.2f', $order->getBaseGrandTotal()) . $order->getBaseCurrencyCode()
@@ -268,6 +370,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     /**
      *  Prepare string for MAC generation
      *
+     *  @deprecated
      *  @param    none
      *  @return	  string MAC string
      */
@@ -283,8 +386,36 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     }
 
     /**
+     * Compute the MAC
+     *
+     * @param $sData
+     * @return string
+     */
+    public function computeHmac($sData)
+    {
+        return strtolower(hash_hmac("sha1", $sData, $this->_getKeyEncrypted()));
+    }
+
+    /**
+     * Return MAC string on basis of Cybermut response data
+     *
+     * @param $data
+     * @return mixed
+     */
+    public function getResponseMACV2($data)
+    {
+        if (array_key_exists('MAC', $data)) {
+            unset($data['MAC']);
+        }
+
+        $hashable = $this->getHashable($data);
+        return $this->computeHmac($data);
+    }
+
+    /**
      *  Return MAC string on basis of Cybermut response data
      *
+     *  @deprecated
      *  @param    none
      *  @return	  string MAC
      */
@@ -392,6 +523,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     /**
      *  Select old and new system
      *
+     *  @deprecated
      *  @param    string
      *  @return	  string encrypted key
      */
@@ -408,6 +540,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
      * Return MAC string for payment authentification
      * new system
      *
+     *  @deprecated
      *  @param    string
      *  @return	  string encrypted key
      */
@@ -432,7 +565,7 @@ abstract class Quadra_Cybermut_Model_Abstract extends Mage_Payment_Model_Method_
     /**
      * Return MAC string for payment authentification
      * old HMAC system
-     *
+     *  @deprecated
      *  @param    string
      *  @return	  string encrypted key
      */

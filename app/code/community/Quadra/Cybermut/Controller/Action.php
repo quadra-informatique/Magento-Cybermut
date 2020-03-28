@@ -127,6 +127,27 @@ abstract class Quadra_Cybermut_Controller_Action extends Mage_Core_Controller_Fr
         $session->unsQuoteId();
     }
 
+    protected function computeHmacSource($source)
+    {
+        $anomalies = null;
+        // sole field to exclude from the MAC computation
+        if( array_key_exists('MAC', $source) ) {
+            unset($source['MAC']);
+        } else {
+            $anomalies .= ":MAC";
+        }
+
+        if ($anomalies != null) {
+            return "anomaly_detected" . $anomalies;
+        }
+        // order by key is mandatory
+        ksort($source);
+        // map entries to "key=value" to match the target format
+        array_walk($source, function(&$a, $b) { $a = "$b=$a"; });
+        // join all entries using asterisk as separator
+        return implode( '*', $source);
+    }
+
     /**
      *  Cybermut response router
      *
@@ -155,8 +176,10 @@ abstract class Quadra_Cybermut_Controller_Action extends Mage_Core_Controller_Fr
                     ->save();
         }
 
-        $returnedMAC = $postData['MAC'];
-        $correctMAC = $model->getResponseMAC($postData);
+        $MAC_source = $this->computeHmacSource($postData);
+
+        $computed_MAC = $model->computeHmac($MAC_source);
+        $congruent_MAC = array_key_exists('MAC', $postData) && $computed_MAC == strtolower($postData['MAC']);
 
         foreach ($this->getRealOrderIds() as $realOrderId) {
             $order = Mage::getModel('sales/order')->loadByIncrementId($realOrderId);
@@ -166,7 +189,7 @@ abstract class Quadra_Cybermut_Controller_Action extends Mage_Core_Controller_Fr
             }
         }
 
-        if ($returnedMAC == $correctMAC) {
+        if ($congruent_MAC) {
             if ($model->isSuccessfulPayment($postData['code-retour'])) {
                 foreach ($this->getRealOrderIds() as $realOrderId) {
                     $order = Mage::getModel('sales/order')->loadByIncrementId($realOrderId);
